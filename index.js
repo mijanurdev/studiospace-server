@@ -103,6 +103,20 @@ app.get("/api/studios/:id", async (req, res) => {
   }
 });
 
+app.post("/api/studios", verifyToken, async (req, res) => {
+  try {
+    const data = req.body;
+    if (!data.title || !data.category || !data.hourlyRate) {
+      return res.status(400).send({ msg: "Title, category and hourly rate are required!" });
+    }
+    data.createdAt = new Date();
+    const result = await studiosCollection.insertOne(data);
+    res.status(201).send(result);
+  } catch (error) {
+    res.status(500).send({ msg: "Server Error!" });
+  }
+});
+
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
