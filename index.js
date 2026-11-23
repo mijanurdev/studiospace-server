@@ -117,6 +117,39 @@ app.post("/api/studios", verifyToken, async (req, res) => {
   }
 });
 
+app.patch("/api/studios/:id", verifyToken, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const data = req.body;
+    delete data._id;
+    const result = await studiosCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: data }
+    );
+    if (result.matchedCount === 0) {
+      return res.status(404).send({ msg: "Studio not found!" });
+    }
+    res.send(result);
+  } catch (error) {
+    res.status(400).send({ msg: "Invalid studio id!" });
+  }
+});
+
+app.delete("/api/studios/:id", verifyToken, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const result = await studiosCollection.deleteOne({
+      _id: new ObjectId(id),
+    });
+    if (result.deletedCount === 0) {
+      return res.status(404).send({ msg: "Studio not found!" });
+    }
+    res.send(result);
+  } catch (error) {
+    res.status(400).send({ msg: "Invalid studio id!" });
+  }
+});
+
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
