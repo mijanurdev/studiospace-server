@@ -179,6 +179,19 @@ app.post("/api/bookings", verifyToken, async (req, res) => {
     if (!studio) {
       return res.status(404).send({ msg: "Studio not found!" });
     }
+    const existingBookings = await bookingsCollection
+      .find({
+        studioId: data.studioId,
+        date: data.date,
+        status: { $in: ["Pending", "Confirmed"] },
+      })
+      .toArray();
+    const isOverlap = existingBookings.some((booking) => {
+      return data.startTime < booking.endTime && data.endTime > booking.startTime;
+    });
+    if (isOverlap) {
+      return res.status(400).send({ msg: "This time slot is already booked!" });
+    }
     const booking = {
       studioId: data.studioId,
       studioTitle: studio.title,
@@ -196,6 +209,28 @@ app.post("/api/bookings", verifyToken, async (req, res) => {
     res.status(201).send(result);
   } catch (error) {
     res.status(400).send({ msg: "Invalid booking data!" });
+  }
+});
+
+app.patch("/api/bookings/:id/cancel", verifyToken, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const booking = await bookingsCollection.findOne({
+      _id: new ObjectId(id),
+    });
+    if (!booking) {
+      return res.status(404).send({ msg: "Booking not found!" });
+    }
+    if (booking.status !== "Pending") {
+      return res.status(400).send({ msg: "Only Pending bookings can be cancelled!" });
+    }
+    const result = await bookingsCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { status: "Cancelled" } }
+    );
+    res.send(result);
+  } catch (error) {
+    res.status(400).send({ msg: "Invalid booking id!" });
   }
 });
 
