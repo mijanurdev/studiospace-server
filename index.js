@@ -71,6 +71,38 @@ const verifyToken = async (req, res, next) => {
 
 export { verifyToken };
 
+app.get("/api/studios", async (req, res) => {
+  try {
+    const category = req.query.category;
+    const limit = req.query.limit ? parseInt(req.query.limit) : 0;
+    let query = {};
+    if (category) {
+      query.category = category;
+    }
+    let cursor = studiosCollection.find(query);
+    if (limit > 0) {
+      cursor = cursor.limit(limit);
+    }
+    const studios = await cursor.toArray();
+    res.send(studios);
+  } catch (error) {
+    res.status(500).send({ msg: "Server Error!" });
+  }
+});
+
+app.get("/api/studios/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const studio = await studiosCollection.findOne({ _id: new ObjectId(id) });
+    if (!studio) {
+      return res.status(404).send({ msg: "Studio not found!" });
+    }
+    res.send(studio);
+  } catch (error) {
+    res.status(400).send({ msg: "Invalid studio id!" });
+  }
+});
+
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
