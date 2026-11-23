@@ -150,6 +150,55 @@ app.delete("/api/studios/:id", verifyToken, async (req, res) => {
   }
 });
 
+app.get("/api/bookings", async (req, res) => {
+  try {
+    const email = req.query.email;
+    let query = {};
+    if (email) {
+      query.userEmail = email;
+    }
+    const bookings = await bookingsCollection
+      .find(query)
+      .sort({ createdAt: -1 })
+      .toArray();
+    res.send(bookings);
+  } catch (error) {
+    res.status(500).send({ msg: "Server Error!" });
+  }
+});
+
+app.post("/api/bookings", verifyToken, async (req, res) => {
+  try {
+    const data = req.body;
+    if (!data.studioId || !data.date || !data.startTime || !data.endTime || !data.userEmail) {
+      return res.status(400).send({ msg: "Studio, date, time and email are required!" });
+    }
+    const studio = await studiosCollection.findOne({
+      _id: new ObjectId(data.studioId),
+    });
+    if (!studio) {
+      return res.status(404).send({ msg: "Studio not found!" });
+    }
+    const booking = {
+      studioId: data.studioId,
+      studioTitle: studio.title,
+      studioImage: studio.image,
+      hourlyRate: studio.hourlyRate,
+      date: data.date,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      userEmail: data.userEmail,
+      userName: data.userName,
+      status: "Pending",
+      createdAt: new Date(),
+    };
+    const result = await bookingsCollection.insertOne(booking);
+    res.status(201).send(result);
+  } catch (error) {
+    res.status(400).send({ msg: "Invalid booking data!" });
+  }
+});
+
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
